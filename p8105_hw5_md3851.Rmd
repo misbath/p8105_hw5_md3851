@@ -39,10 +39,25 @@ output
 
 ## Problem 2
 
+ 
 ```{r}
-
-study_df = tibble(
+names_df = 
+  tibble(
   x = list.files(path="./data")
 )
+
+file_path = "./data/"
+file_names = file_path %>% 
+  list.files()
+
+observations_df = 
+  file_names %>%
+  map_dfr(function(file_name){
+  
+  read_csv(paste0(file_path, file_name))
+}) 
+
+
+
 ```
  
