@@ -43,7 +43,7 @@ output
 ```{r}
 names_df = 
   tibble(
-  x = list.files(path="./data")
+  subject = list.files(path="./data")
 )
 
 file_path = "./data/"
@@ -57,7 +57,9 @@ observations_df =
   read_csv(paste0(file_path, file_name))
 }) 
 
+study_data = cbind(names_df, observations_df) %>%
+ mutate(subject = str_replace(subject, ".csv", "")) 
 
-
+study_data
 ```
  
