@@ -85,8 +85,12 @@ study_data = cbind(names_df, observations_df) %>%
     values_to = "observations") 
 
 study_data %>%
-  ggplot(aes(x = week, y = observations, color = subject)) +
-  geom_line()
+  ggplot(aes(x = as.numeric(week), y = observations, color = subject)) +
+  geom_line() + 
+  labs(
+       title = "Weekly observations by subject", 
+       x = "Week",
+       y = "Observations")
 
 
 ```
