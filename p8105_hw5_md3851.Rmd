@@ -53,8 +53,8 @@ cleaning = function(x) {
      {replace_na(x, "virginica")}
 }
 
-output = map_dfr(.x = iris_with_missing, ~ cleaning(.x), .id = "input")
-output 
+output = map_dfr(.x = iris_with_missing, ~ cleaning(.x))
+output
 ```
 
 ## Problem 2
@@ -82,15 +82,20 @@ study_data = cbind(names_df, observations_df) %>%
     week_1:week_8,
     names_to = "week",
     names_prefix = "week_",
-    values_to = "observations") 
+    values_to = "observations") %>%
+ mutate(arm_id = subject) %>% 
+ separate(arm_id, into = c("arm", "id"), sep = "_") %>% 
+ select(-id)
+  
 
 study_data %>%
   ggplot(aes(x = as.numeric(week), y = observations, color = subject)) +
   geom_line() + 
   labs(
-       title = "Weekly observations by subject", 
+       title = "Weekly observations by arm", 
        x = "Week",
-       y = "Observations")
+       y = "Observations") + 
+  facet_grid(~arm)
 
 
 ```
@@ -99,58 +104,65 @@ study_data %>%
 
 ```{r}
 sim_regression = function(n = 30, beta0 = 2, beta1 = 0, sigma_sq = 50) {
-  
+
   sim_data = tibble(
     x = rnorm(n),
     y = beta0 + beta1 * x + rnorm(n, 0, sigma_sq)
   )
   
-  ls_fit = lm(y ~ x, data = sim_data)
-  
-  #tibble(
-    #beta0_hat = coef(ls_fit)[1],
-    #beta1_hat = coef(ls_fit)[2]
-  #)
-  
-  tidy_fit = tidy(ls_fit)
+  ls_fit = lm(y ~ x, data = sim_data) %>% 
+    tidy() %>%
+    select(-std.error, -statistic)
 }
 
-sim_results_0 = 
-  rerun(10000, sim_regression()) %>% 
-  bind_rows() %>% 
-  select(-std.error, -statistic)
+
+sim_results = 
+  tibble(beta1 = 0:6) %>% 
+  mutate(
+    output_lists = map(.x = beta1, ~rerun(1000, sim_regression(beta1 = .x))),
+    estimate_dfs = map(output_lists, bind_rows)) %>% 
+  select(-output_lists) %>% 
+  unnest(estimate_dfs)
+
 ```
 
-```{r, eval = FALSE}
-sim_results_1 = 
-  rerun(10000, sim_regression(beta1 = 1)) %>% 
-  bind_rows()
-
-sim_results_2 = 
-  rerun(10000, sim_regression(beta1 = 2)) %>% 
-  bind_rows()
-
-sim_results_3 = 
-  rerun(10000, sim_regression(beta1 = 3)) %>% 
-  bind_rows()
-
-sim_results_4 = 
-  rerun(10000, sim_regression(beta1 = 4)) %>% 
-  bind_rows()
-
-sim_results_5 = 
-  rerun(10000, sim_regression(beta1 = 5)) %>% 
-  bind_rows()
-
-sim_results_6 = 
-  rerun(10000, sim_regression(beta1 = 6)) %>% 
-  bind_rows()
-```
 
 ```{r}
-sim_results_1_to_6 = 
-    rerun(10000, sim_regression(beta1 = 1:6)) %>% 
-  bind_rows()
+
+fig_1 =
+sim_results %>%
+  group_by(beta1) %>%
+  summarize(n = n(),
+            prop_sig = sum(p.value < .05)/n()*100) %>%
+ggplot(aes(x = beta1, y = prop_sig)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE) + 
+  labs(x = "Value of Beta1", y = "Proportion Null Rejected")
+
+fig_1
+
+fig_2 = 
+  sim_results %>%
+  mutate(average_estimate = mean(estimate)) %>%
+  ggplot(aes(x = beta1, y = average_estimate)) + 
+  geom_point() + 
+  geom_line() + 
+  labs(x = "Beta1", y = "Mean Estimate Beta1")
+
+fig_2
+
+fig_3 = 
+  sim_results %>%
+  filter(p.value < .05) %>%
+  mutate(average_estimate = mean(estimate)) %>%
+  ggplot(aes(x = beta1, y = average_estimate)) + 
+  geom_point() + 
+  geom_line() + 
+  labs(x = "Beta1", y = "Mean Estimate Beta1 When Null Is Rejected")
+
+fig_3
+
+
 ```
 
 
