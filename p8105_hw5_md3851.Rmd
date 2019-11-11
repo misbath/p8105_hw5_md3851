@@ -99,6 +99,7 @@ study_data %>%
 
 
 ```
+
 The plot above shows weekly observations for each participant by study group (control vs experimental). On average, the observations are higher in the experimental group compared to the control group. However, in both groups, there is a lot of variations at two levels: 1) between individuals and 2) for each individual  from one week to another. 
 
 ## Problem 3 
